@@ -221,6 +221,9 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
         if (node == null) {
             return false;
         }
+        if (node.value == null) {
+            node = null;
+        }
         root = node;
         size--;
         return true;
@@ -236,6 +239,9 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             if (rmv == null) {
                 return null;
             } else {
+                if (rmv.value == null) {
+                    rmv = null;
+                }
                 a.left = rmv;
             }
         } else if (cmp < 0) {
@@ -243,6 +249,9 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             if (rmv == null) {
                 return null;
             } else {
+                if (rmv.value == null) {
+                    rmv = null;
+                }
                 a.right = rmv;
             }
         } else {
@@ -250,7 +259,7 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             Node r = a.right;
             a.value = null;
             if (r == null) {
-                return l;
+                return l == null ? new Node(null) : l;
             } else {
                 Node min = findMinChild(r);
                 min.right = removeMinChild(r);
@@ -272,6 +281,7 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
 
     public static void main(String[] args) {
         AVLTree<Integer> tree = new AVLTree<>();
+        System.out.println(tree);
         System.out.println(tree.add(10));
         System.out.println(tree.add(5));
         System.out.println(tree.add(15));
@@ -298,5 +308,17 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             tree.add(rnd.nextInt(50));
         }
         System.out.println(tree.inorderTraverse());
+
+        System.out.println("------------");
+        ISortedSet<Integer> set = new AVLTree<>();
+        for (int i = 0; i < 10; i++) {
+            System.out.print(set.add(i) ? "T" : "F");
+        }
+        System.out.println("\n" + set);
+        System.out.println();
+        for (int i = 10; i >= 0; i--) {
+            System.out.print(set.remove(i) ? "T" : "F");
+        }
+        System.out.println("\n" + set);
     }
 }
