@@ -159,7 +159,7 @@ public class RedBlackTree<E extends Comparable<E>> implements ISortedSet<E> {
         if (value == null) {
             throw new NullPointerException("value is null");
         }
-        if (root == null) {
+        if (root == nil) {
             return false;
         }
         Node z = root;
@@ -384,5 +384,10 @@ public class RedBlackTree<E extends Comparable<E>> implements ISortedSet<E> {
         System.out.println(tree.size());
         System.out.println(tree.first());
         System.out.println(tree.last());
+
+        ISortedSet<Integer> set = new RedBlackTree<>();
+        set.add(0);
+        set.remove(0);
+        set.remove(0);
     }
 }
