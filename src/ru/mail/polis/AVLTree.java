@@ -7,17 +7,15 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
 
     class Node {
 
-        Node(E value, Node parent) {
+        Node(E value) {
             this.value = value;
-            this.parent = parent;
+            height = 1;
         }
 
         E value;
-        Node parent;
         Node left;
         Node right;
-        //diff = h(L) - h(R)
-        int diff;
+        byte height;
 
         @Override
         public String toString() {
@@ -44,6 +42,55 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
 
     public AVLTree(Comparator<E> comparator) {
         this.comparator = comparator;
+    }
+
+    private byte height(Node a) {
+        return a == null ? 0 : a.height;
+    }
+
+    private byte diff(Node a) {
+        return (byte)(height(a.left) - height(a.right));
+    }
+
+    private void fixHeight(Node a) {
+        byte l = height(a.left);
+        byte r = height(a.right);
+        a.height = (byte)(1 + (l > r ? l : r));
+    }
+
+    private Node rotateRight(Node a) {
+        Node b = a.left;
+        a.left = b.right;
+        b.right = a;
+        fixHeight(a);
+        fixHeight(b);
+        return b;
+    }
+
+    private Node rotateLeft(Node a) {
+        Node b = a.right;
+        a.right = b.left;
+        b.left = a;
+        fixHeight(a);
+        fixHeight(b);
+        return b;
+    }
+
+    private Node balance(Node a) {
+        fixHeight(a);
+        if (diff(a) == 2) {
+            if (diff(a.left) < 0) {
+                a.left = rotateLeft(a.left);
+            }
+            return rotateRight(a);
+        } else if (diff(a) == -2) {
+            if (diff(a.right) > 0) {
+                a.right = rotateRight(a.right);
+            }
+            return rotateLeft(a);
+        } else {
+            return a;
+        }
     }
 
     @Override
@@ -120,37 +167,48 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
         if (value == null) {
             throw new NullPointerException("expected not null value");
         }
-        if (isEmpty()) {
-            root = new Node(value, null);
-            size = 1;
-            return true;
+        Node node = insert(root, value);
+        if (node == null) {
+            return false;
         }
-        Node curr = root;
-        while (true) {
-            int cmp = compare(curr.value, value);
-            if (cmp == 0) {
-                return false;
-            } else if (cmp > 0) {
-                if (curr.left != null) {
-                    curr = curr.left;
-                } else {
-                    curr.left = new Node(value, curr);
-                    curr = curr.left;
-                    break;
+        root = node;
+        return true;
+    }
+
+    private Node insert(Node a, E value) {
+        if (a == null) {
+            return new Node(value);
+        } else {
+            int cmp = compare(a.value, value);
+            if (cmp > 0) {
+                Node ins = insert(a.left, value);
+                if (ins == null) {
+                    return null;
                 }
+                a.left = ins;
+            } else if (cmp < 0) {
+                Node ins = insert(a.right, value);
+                if (ins == null) {
+                    return null;
+                }
+                a.right = ins;
             } else {
-                if (curr.right != null) {
-                    curr = curr.right;
-                } else {
-                    curr.right = new Node(value, curr);
-                    curr = curr.right;
-                    break;
-                }
+                return null;
             }
         }
-        size++;
-        balanceAdd(curr);
-        return true;
+        return balance(a);
+    }
+
+    private Node findMinChild(Node a) {
+        return a.left == null ? a : findMinChild(a.left);
+    }
+
+    private Node removeMinChild(Node a) {
+        if (a.left == null) {
+            return a.right;
+        }
+        a.left = removeMinChild(a.left);
+        return balance(a);
     }
 
     @Override
@@ -158,248 +216,48 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
         if (value == null) {
             throw new NullPointerException("expected not null value");
         }
-        if (isEmpty()) {
+        Node node = delete(root, value);
+        if (node == null) {
             return false;
         }
-        Node curr = root;
-        int cmp;
-        while ((cmp = compare(curr.value, value)) != 0) {
-            if (cmp > 0) {
-                curr = curr.left;
-            } else {
-                curr = curr.right;
-            }
-            if (curr == null) {
-                return false;
-            }
-        }
-        boolean isRightChild = false;
-        if ((curr.left != null) && (curr.right != null)) {
-            isRightChild = true;
-            Node next = curr.right;
-            while (next.left != null) {
-                next = next.left;
-            }
-            curr.value = next.value;
-            if (next.parent == curr) {
-                curr.right = next.right;
-            } else {
-                next.parent.left = next.right;
-            }
-            if (next.right != null) {
-                next.right.parent = next.parent;
-            }
-            next = null;
-        } else {
-            if (curr.left != null) {
-                isRightChild = false;
-                reLink(curr.parent, curr, curr.left);
-            } else {
-                isRightChild = true;
-                reLink(curr.parent, curr, curr.right);
-            }
-        }
-        balanceRemove(curr.parent, isRightChild);
-        size--;
+        root = node;
         return true;
     }
 
-    private void reLink(Node parent, Node curr, Node child) {
-        if (parent == null) {
-            root = child;
-        } else if (parent.left == curr) {
-            parent.left = child;
-        } else if (parent.right == curr) {
-            parent.right = child;
+    private Node delete(Node a, E value) {
+        if (a == null) {
+            return null;
         }
-        if (child != null) {
-            child.parent = parent;
-        }
-    }
-
-    private void balanceAdd(final Node last) {
-        Node curr = last;
-        while (true) {
-            Node parent = curr.parent;
-            if (parent == null) {
-                return;
-            }
-            if (parent.right == curr) {
-                parent.diff--;
+        int cmp = compare(a.value, value);
+        if (cmp > 0) {
+            Node rmv = delete(a.left, value);
+            if (rmv == null) {
+                return null;
             } else {
-                parent.diff++;
+                a.left = rmv;
             }
-            if (parent.diff == 2) {
-                if (curr.diff >= 0) {
-                    rotateRightSmall(parent, curr);
-                } else {
-                    rotateRightLarge(parent, curr, curr.right);
-                }
-            } else if (parent.diff == -2) {
-                if (curr.diff <= 0) {
-                    rotateLeftSmall(parent, curr);
-                } else {
-                    rotateLeftLarge(parent, curr, curr.left);
-                }
+        } else if (cmp < 0) {
+            Node rmv = delete(a.right, value);
+            if (rmv == null) {
+                return null;
+            } else {
+                a.right = rmv;
             }
-            if (parent.diff == 0) {
-                return;
-            }
-            curr = parent;
-        }
-    }
-
-    private void balanceRemove(final Node last, boolean isRightChild) {
-        if (last == null) {
-            return;
-        }
-        Node curr;
-        Node parent = last;
-        if (isRightChild) {
-            parent.diff++;
         } else {
-            parent.diff--;
-        }
-        if (parent.diff == 2) {
-            curr = parent.left;
-            if (curr.diff >= 0) {
-                rotateRightSmall(parent, curr);
+            Node l = a.left;
+            Node r = a.right;
+            a.value = null;
+            if (r == null) {
+                return l;
             } else {
-                rotateRightLarge(parent, curr, curr.right);
-            }
-        } else if (parent.diff == -2) {
-            curr = parent.right;
-            if (curr.diff <= 0) {
-                rotateLeftSmall(parent, curr);
-            } else {
-                rotateLeftLarge(parent, curr, curr.left);
+                Node min = findMinChild(r);
+                min.right = removeMinChild(r);
+                min.left = l;
+                return balance(min);
             }
         }
-        if (Math.abs(parent.diff) == 1) {
-            return;
-        }
-        curr = parent;
-        while (true) {
-            parent = curr.parent;
-            if (parent == null) {
-                return;
-            }
-            if (parent.right == curr) {
-                parent.diff++;
-            } else {
-                parent.diff--;
-            }
-
-            if (parent.diff == 2) {
-                if (curr.diff >= 0) {
-                    rotateRightSmall(parent, curr);
-                } else {
-                    rotateRightLarge(parent, curr, curr.right);
-                }
-            } else if (parent.diff == -2) {
-                if (curr.diff <= 0) {
-                    rotateLeftSmall(parent, curr);
-                } else {
-                    rotateLeftLarge(parent, curr, curr.left);
-                }
-            }
-            if (Math.abs(parent.diff) == 1) {
-                return;
-            }
-            curr = parent;
-        }
+        return balance(a);
     }
-
-    private void rotateRightSmall(Node a, Node b) {
-        Node boss = a.parent;
-        b.parent = boss;
-        a.parent = b;
-        a.left = b.right;
-        if (b.right != null) {
-            b.right.parent = a;
-        }
-        b.right = a;
-        if (boss == null) {
-            root = b;
-        } else if (boss.right == a) {
-            boss.right = b;
-        } else {
-            boss.left = b;
-        }
-        if (b.diff == 0) {
-            a.diff = 1;
-            b.diff = -1;
-        } else if (b.diff == 1) {
-            a.diff = 0;
-            b.diff = 0;
-        }
-    }
-
-    private void rotateLeftSmall(Node a, Node b) {
-        Node boss = a.parent;
-        b.parent = boss;
-        a.parent = b;
-        a.right = b.left;
-        if (b.left != null) {
-            b.left.parent = a;
-        }
-        b.left = a;
-        if (boss == null) {
-            root = b;
-        } else if (boss.right == a) {
-            boss.right = b;
-        } else {
-            boss.left = b;
-        }
-        if (b.diff == 0) {
-            a.diff = -1;
-            b.diff = 1;
-        } else if (b.diff == -1) {
-            a.diff = 0;
-            b.diff = 0;
-        }
-    }
-
-    private void rotateRightLarge(Node a, Node b, Node c) {
-        int cdiff = c.diff;
-        rotateLeftSmall(b, c);
-        rotateRightSmall(a, c);
-        c.diff = 0;
-        switch (cdiff) {
-            case -1:
-                a.diff = 0;
-                b.diff = 1;
-                break;
-            case 0:
-                a.diff = 0;
-                b.diff = 0;
-                break;
-            case 1:
-                a.diff = -1;
-                b.diff = 0;
-        }
-    }
-
-    private void rotateLeftLarge(Node a, Node b, Node c) {
-        int cdiff = c.diff;
-        rotateRightSmall(b, c);
-        rotateLeftSmall(a, c);
-        c.diff = 0;
-        switch (cdiff) {
-            case -1:
-                a.diff = 1;
-                b.diff = 0;
-                break;
-            case 0:
-                a.diff = 0;
-                b.diff = 0;
-                break;
-            case 1:
-                a.diff = 0;
-                b.diff = -1;
-        }
-    }
-
 
     private int compare(E v1, E v2) {
         return comparator == null ? v1.compareTo(v2) : comparator.compare(v1, v2);
@@ -412,20 +270,30 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
 
     public static void main(String[] args) {
         AVLTree<Integer> tree = new AVLTree<>();
-        tree.add(10);
-        tree.add(5);
-        tree.add(15);
+        System.out.println(tree.add(10));
+        System.out.println(tree.add(5));
+        System.out.println(tree.add(15));
         System.out.println(tree.toString());
-        tree.add(2);
-        tree.add(8);
+        System.out.println(tree.add(2));
+        System.out.println(tree.add(8));
         System.out.println(tree.toString());
-        tree.add(9);
-        tree.add(9);
+        System.out.println(tree.add(9));
+        System.out.println(tree.add(9));
         System.out.println(tree.toString());
-        tree.remove(10);
+        System.out.println(tree.remove(10));
+        System.out.println(tree.remove(100));
         System.out.println(tree.toString());
-        /*tree.remove(1);
-        System.out.println(tree.toString());
-        System.out.println(Arrays.toString(tree.inorderTraverse().toArray()));*/
+
+        System.out.println("------------");
+        Random rnd = new Random();
+        tree = new AVLTree<>((v1, v2) -> {
+            // Even first
+            final int c = Integer.compare(v1 % 2, v2 % 2);
+            return c != 0 ? c : Integer.compare(v1, v2);
+        });
+        for (int i = 0; i < 15; i++) {
+            tree.add(rnd.nextInt(50));
+        }
+        System.out.println(tree.inorderTraverse());
     }
 }
