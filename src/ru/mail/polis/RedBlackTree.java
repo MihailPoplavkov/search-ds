@@ -57,7 +57,7 @@ public class RedBlackTree<E extends Comparable<E>> implements ISortedSet<E> {
             throw new NoSuchElementException("Set is empty");
         }
         Node curr = root;
-        while (curr.left != null) {
+        while (curr.left.value != null) {
             curr = curr.left;
         }
         return curr.value;
@@ -69,7 +69,7 @@ public class RedBlackTree<E extends Comparable<E>> implements ISortedSet<E> {
             throw new NoSuchElementException("set is empty");
         }
         Node curr = root;
-        while (curr.right != null) {
+        while (curr.right.value != null) {
             curr = curr.right;
         }
         return curr.value;
@@ -382,5 +382,7 @@ public class RedBlackTree<E extends Comparable<E>> implements ISortedSet<E> {
         }
         System.out.println(tree.inorderTraverse());
         System.out.println(tree.size());
+        System.out.println(tree.first());
+        System.out.println(tree.last());
     }
 }
