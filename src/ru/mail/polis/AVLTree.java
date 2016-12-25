@@ -172,6 +172,7 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             return false;
         }
         root = node;
+        size++;
         return true;
     }
 
@@ -221,6 +222,7 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
             return false;
         }
         root = node;
+        size--;
         return true;
     }
 
@@ -283,6 +285,7 @@ public class AVLTree<E extends Comparable<E>> implements ISortedSet<E> {
         System.out.println(tree.remove(10));
         System.out.println(tree.remove(100));
         System.out.println(tree.toString());
+        System.out.println("Size = " + tree.size);
 
         System.out.println("------------");
         Random rnd = new Random();
